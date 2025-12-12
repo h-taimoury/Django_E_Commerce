@@ -1,5 +1,48 @@
 from rest_framework import serializers
-from .models import Category, Product, ProductImage
+from .models import Category, Product, ProductImage, Attribute, Option, Value
+
+
+# --- 1. EAV Attribute Option Serializer ---
+class OptionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Option model, used for displaying valid choices for an Attribute.
+    """
+
+    class Meta:
+        model = Option
+        fields = ["id", "value"]
+
+
+# --- 2. EAV Attribute Value Serializer (Read) ---
+class AttributeValueReadSerializer(serializers.ModelSerializer):
+    """
+    Serializer to display a single product specification for the frontend.
+    It reads the related Attribute's name and uses the custom get_value() method.
+    """
+
+    # Nested field to display the Attribute's name and type
+    attribute_name = serializers.CharField(source="attribute.name", read_only=True)
+    attribute_slug = serializers.CharField(source="attribute.slug", read_only=True)
+    data_type = serializers.CharField(source="attribute.data_type", read_only=True)
+
+    # CRUCIAL: Uses the custom get_value() helper method on the model
+    value = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Value
+        fields = [
+            "attribute_name",
+            "attribute_slug",
+            "data_type",
+            "value",
+        ]
+
+    def get_value(self, obj):
+        """
+        Calls the custom helper method on the AttributeValue model to retrieve
+        the data from the correct value field (text, integer, float, or option).
+        """
+        return obj.get_value()
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -20,11 +63,6 @@ class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ["id", "image", "order"]
-
-
-# products/serializers.py
-
-# Assuming imports for Product, CategorySerializer, and ProductImageSerializer
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -55,6 +93,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     # The following line works because we have a categories field in Product model
     # READ: Use nested CategorySerializer for listing all categories on GET requests
     categories = CategorySerializer(many=True)
+    # The 'attribute_values' field comes from the related_name in the AttributeValue model
+    specifications = AttributeValueReadSerializer(
+        source="attribute_values",  # Use the attribute_values queryset
+        many=True,
+        read_only=True,
+    )
 
     class Meta:
         model = Product
@@ -68,6 +112,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "main_image",
             "categories",  # The READ field (list of nested category objects)
             "images",  # Nested gallery images (ProductImage model)
+            "specifications",
         ]
         read_only_fields = fields
 
