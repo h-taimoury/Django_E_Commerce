@@ -1,13 +1,23 @@
 from rest_framework import viewsets
+from rest_framework.generics import (
+    ListCreateAPIView,
+    CreateAPIView,
+    RetrieveUpdateDestroyAPIView,
+)
 
 # from rest_framework.filters import SearchFilter, OrderingFilter
 # from django_filters.rest_framework import DjangoFilterBackend
-from .models import Category, Product
+from .models import Category, Product, Attribute, Option, Value
 from .serializers import (
     CategorySerializer,
     ProductListSerializer,
     ProductDetailSerializer,
     ProductWriteSerializer,
+    AttributeListSerializer,
+    AttributeDetailSerializer,
+    AttributeWriteSerializer,
+    OptionSerializer,
+    ValueWriteSerializer,
 )
 from .permissions import IsAdminOrReadOnly
 
@@ -50,8 +60,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             queryset = Product.objects.filter(is_active=True)
 
         if self.action == "retrieve":
-            # Optimization for detail view (includes comments)
-            return queryset.prefetch_related("categories", "images")
+            # Optimization for detail view
+            return queryset.prefetch_related(
+                "categories", "images", "values__attribute", "values__value_option"
+            )
 
         # Default minimal queryset for write operations (create, update, destroy)
         return queryset
@@ -66,3 +78,57 @@ class ProductViewSet(viewsets.ModelViewSet):
         if self.action == "retrieve":
             return ProductDetailSerializer
         return ProductListSerializer  # default for 'list'
+
+
+class AttributeViewSet(viewsets.ModelViewSet):
+    """
+    Handles CRUD operations for Attributes (Product Specifications).
+    Permissions: Read-only for all users, Admin-only for CUD.
+    """
+
+    queryset = Attribute.objects.all().prefetch_related("categories")
+    permission_classes = [IsAdminOrReadOnly]
+
+    # Optionally add filtering/searching if needed for the admin UI
+    # filter_backends = [SearchFilter, OrderingFilter]
+    # search_fields = ['name', 'slug']
+    # ordering_fields = ['name']
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return AttributeWriteSerializer
+        if self.action == "retrieve":
+            return AttributeDetailSerializer
+        return AttributeListSerializer  # default for 'list'
+
+
+class OptionListCreateAPIView(ListCreateAPIView):
+    """
+    Handles GET (list all options) and POST (create a new option).
+    Read access for all, Write access for Admin only.
+    """
+
+    queryset = Option.objects.all()
+    serializer_class = OptionSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+
+class ValueCreateAPIView(CreateAPIView):
+    """
+    Handles POST requests for creating a new Value instance at /api/values/.
+    """
+
+    queryset = Value.objects.all()
+    serializer_class = ValueWriteSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+
+# I don't need the 'Retrieve' part, but this concrete View Class was the closest thing to what I need, right?
+class ValueUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
+    """
+    Handles PUT, PATCH, and DELETE requests for a specific Value instance
+    at /api/values/{id}/.
+    """
+
+    queryset = Value.objects.all()
+    serializer_class = ValueWriteSerializer
+    permission_classes = [IsAdminOrReadOnly]
