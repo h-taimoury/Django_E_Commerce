@@ -10,7 +10,7 @@ from django.db import models
 ATTRIBUTE_DATA_TYPES = (
     ("text", "Text (String)"),
     ("integer", "Integer (Number)"),
-    ("float", "Float (Decimal Number)"),
+    ("decimal", "decimal (Decimal Number)"),
     ("boolean", "Boolean"),
     ("choice", "Choice (Select from Options)"),
 )
@@ -86,7 +86,9 @@ class Value(models.Model):
     # We use separate fields for integrity and easier indexing/querying.
     value_text = models.TextField(blank=True, null=True)
     value_integer = models.IntegerField(blank=True, null=True)
-    value_float = models.FloatField(blank=True, null=True)
+    value_decimal = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
     value_boolean = models.BooleanField(blank=True, null=True)
 
     # For 'choice' attributes, we link to a fixed option model for integrity
@@ -117,8 +119,8 @@ class Value(models.Model):
             return self.value_text
         elif data_type == "integer":
             return self.value_integer
-        elif data_type == "float":
-            return self.value_float
+        elif data_type == "decimal":
+            return self.value_decimal
         elif data_type == "boolean":
             return self.value_boolean
         elif data_type == "choice" and self.value_option:

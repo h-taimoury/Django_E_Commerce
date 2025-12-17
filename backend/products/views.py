@@ -2,7 +2,8 @@ from rest_framework import viewsets
 from rest_framework.generics import (
     ListCreateAPIView,
     CreateAPIView,
-    RetrieveUpdateDestroyAPIView,
+    UpdateAPIView,
+    DestroyAPIView,
 )
 
 # from rest_framework.filters import SearchFilter, OrderingFilter
@@ -122,8 +123,7 @@ class ValueCreateAPIView(CreateAPIView):
     permission_classes = [IsAdminOrReadOnly]
 
 
-# I don't need the 'Retrieve' part, but this concrete View Class was the closest thing to what I need, right?
-class ValueUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
+class ValueUpdateDestroyAPIView(UpdateAPIView, DestroyAPIView):
     """
     Handles PUT, PATCH, and DELETE requests for a specific Value instance
     at /api/values/{id}/.

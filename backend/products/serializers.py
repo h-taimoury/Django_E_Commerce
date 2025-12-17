@@ -98,7 +98,7 @@ class ValueListSerializer(serializers.ModelSerializer):
     def get_value(self, obj):
         """
         Calls the custom helper method on the Value model to retrieve
-        the data from the correct value field (text, integer, float, or option).
+        the data from the correct value field (text, integer, decimal, or option).
         """
         return obj.get_value()
 
@@ -112,7 +112,8 @@ class ValueWriteSerializer(serializers.ModelSerializer):
         model = Value
         fields = "__all__"
 
-    def validate_product(self, value):
+    # Note that this validation method receives a Product object, not the product id which is received as http request body (request.data)
+    def validate_product(self, product):
         """
         Enforces that the product link cannot be changed after the Value object is created (we want product field to be immutable).
         """
@@ -120,7 +121,7 @@ class ValueWriteSerializer(serializers.ModelSerializer):
         if self.instance is not None:
             # 2. Check if the provided 'value' (the input product ID) is different
             #    from the existing product ID on the instance.
-            if value != self.instance.product_id:
+            if product.id != self.instance.product_id:
                 raise serializers.ValidationError(
                     "The product link for an existing Value record cannot be changed."
                     "This field is immutable after creation."
@@ -128,7 +129,7 @@ class ValueWriteSerializer(serializers.ModelSerializer):
 
         # 3. If it's a creation (self.instance is None) or if the ID hasn't changed,
         #    return the value to allow the process to continue.
-        return value
+        return product
 
     def validate(self, data):
         """
@@ -138,7 +139,7 @@ class ValueWriteSerializer(serializers.ModelSerializer):
         storage_fields = [
             "value_text",
             "value_integer",
-            "value_float",
+            "value_decimal",
             "value_boolean",
             "value_option",
         ]
@@ -191,7 +192,7 @@ class ValueWriteSerializer(serializers.ModelSerializer):
         type_to_field_map = {
             "text": "value_text",
             "integer": "value_integer",
-            "float": "value_float",
+            "decimal": "value_decimal",
             "boolean": "value_boolean",
             "choice": "value_option",
         }
