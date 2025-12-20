@@ -5,6 +5,9 @@ from rest_framework.generics import (
     UpdateAPIView,
     DestroyAPIView,
 )
+from rest_framework.permissions import IsAdminUser
+from rest_framework import status
+from rest_framework.response import Response
 
 # from rest_framework.filters import SearchFilter, OrderingFilter
 # from django_filters.rest_framework import DjangoFilterBackend
@@ -21,6 +24,7 @@ from .serializers import (
     ValueWriteSerializer,
 )
 from .permissions import IsAdminOrReadOnly
+from django.db.models import ProtectedError
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -87,8 +91,16 @@ class AttributeViewSet(viewsets.ModelViewSet):
     Permissions: Read-only for all users, Admin-only for CUD.
     """
 
-    queryset = Attribute.objects.all().prefetch_related("categories")
     permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        base_queryset = Attribute.objects.all()
+        if self.action == "retrieve":
+            # Optimization for detail view
+            return base_queryset.prefetch_related("categories")
+
+        # Default minimal queryset for write operations (create, update, destroy)
+        return base_queryset
 
     # Optionally add filtering/searching if needed for the admin UI
     # filter_backends = [SearchFilter, OrderingFilter]
@@ -111,6 +123,23 @@ class OptionListCreateAPIView(ListCreateAPIView):
     queryset = Option.objects.all()
     serializer_class = OptionSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+
+class OptionDestroyAPIView(DestroyAPIView):
+    queryset = Option.objects.all()
+    serializer_class = OptionSerializer
+    permission_classes = [IsAdminUser]
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": "Cannot delete this option because it is in use by one or more products."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class ValueCreateAPIView(CreateAPIView):

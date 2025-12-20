@@ -5,6 +5,7 @@ from .views import (
     ProductViewSet,
     AttributeViewSet,
     OptionListCreateAPIView,
+    OptionDestroyAPIView,
     ValueCreateAPIView,
     ValueUpdateDestroyAPIView,
 )
@@ -21,6 +22,11 @@ urlpatterns = router.urls
 urlpatterns += [
     # EAV Options endpoint (List/Create)
     path("options/", OptionListCreateAPIView.as_view(), name="option-list-create"),
+    path(
+        "options/<int:pk>/",
+        OptionDestroyAPIView.as_view(),
+        name="option-detail",
+    ),
 ]
 urlpatterns += [
     # EAV Value Endpoints (CUD - Generic Views)
@@ -28,6 +34,6 @@ urlpatterns += [
     path(
         "values/<int:pk>/",
         ValueUpdateDestroyAPIView.as_view(),
-        name="value-update-destroy",
+        name="value-detail",
     ),
 ]

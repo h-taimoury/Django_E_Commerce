@@ -112,7 +112,7 @@ class ValueWriteSerializer(serializers.ModelSerializer):
         model = Value
         fields = "__all__"
 
-    # Note that this validation method receives a Product object, not the product id which is received as http request body (request.data)
+    # Note that this validation method receives a Product instance, not the product id which is received as http request body (request.data)
     def validate_product(self, product):
         """
         Enforces that the product link cannot be changed after the Value object is created (we want product field to be immutable).
@@ -131,6 +131,7 @@ class ValueWriteSerializer(serializers.ModelSerializer):
         #    return the value to allow the process to continue.
         return product
 
+    # Note that this validation method receives a Model instances, not just IDs which is received as http request body (request.data)
     def validate(self, data):
         """
         Runs the three core EAV validation checks.
@@ -144,21 +145,14 @@ class ValueWriteSerializer(serializers.ModelSerializer):
             "value_option",
         ]
 
-        # Determine the instance's attribute (handles both POST and PUT/PATCH)
-        attribute_id = data.get(
-            "attribute", self.instance.attribute.id if self.instance else None
-        )
+        # In DRF, 'attribute' in data is already the Attribute instance!
+        attribute = data.get("attribute")
+        # If we are doing a PATCH and attribute wasn't sent, get it from existing instance
+        if attribute is None and self.instance:
+            attribute = self.instance.attribute
 
-        if not attribute_id:
-            # Should be caught by Django's required check, but good to be defensive
-            raise serializers.ValidationError(
-                {"attribute": "Attribute ID must be provided."}
-            )
-
-        try:
-            attribute = Attribute.objects.get(pk=attribute_id)
-        except Attribute.DoesNotExist:
-            raise serializers.ValidationError({"attribute": "Invalid attribute ID."})
+        if not attribute:
+            raise serializers.ValidationError({"attribute": "Attribute is required."})
 
         # --- 1. Exclusivity Check: Only one field can be set ---
         # Note: We check if the field exists AND is not None
@@ -210,16 +204,10 @@ class ValueWriteSerializer(serializers.ModelSerializer):
 
         # --- 3. Option Scoping Check (only for 'choice' type) ---
         if attribute.data_type == "choice":
-            option_pk = data.get("value_option")
+            # In data, value_option is already an Option instance!
+            value_option = data.get("value_option")
 
-            if option_pk is None:
-                raise serializers.ValidationError(
-                    {"value_option": "Choice attributes require a valid option ID."}
-                )
-
-            if not Option.objects.filter(
-                pk=option_pk, attribute_id=attribute.id
-            ).exists():
+            if value_option and value_option.attribute_id != attribute.id:
                 raise serializers.ValidationError(
                     {
                         "value_option": "Selected option does not belong to this attribute."
@@ -314,6 +302,7 @@ class ProductWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
+            "id",
             "name",
             "slug",
             "description",
@@ -324,7 +313,7 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             "categories",
             "url",
         ]
-        read_only_fields = ["url"]
+        read_only_fields = ["id", "url"]
 
     def get_url(self, obj):
         """Generates the combined slug-ID URL for the product."""
