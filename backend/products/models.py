@@ -5,9 +5,10 @@ from django.db import models
 # CORE EAV MODELS: START
 # ----------------------------------------------------------------------------
 
+
 # Define the data types that an Attribute can store.
-# This prevents storing integers in a text field, for instance.
-ATTRIBUTE_DATA_TYPES = (
+DATA_TYPE_CHOICES = (
+    # Here "text" is the value that will be stored in the database column and "Text (String)" is just a label (used in Admin panel and other places)
     ("text", "Text (String)"),
     ("integer", "Integer (Number)"),
     ("decimal", "decimal (Decimal Number)"),
@@ -28,7 +29,7 @@ class Attribute(models.Model):
     )
     data_type = models.CharField(
         max_length=10,
-        choices=ATTRIBUTE_DATA_TYPES,
+        choices=DATA_TYPE_CHOICES,
         default="text",
         verbose_name="Data Type",
     )
