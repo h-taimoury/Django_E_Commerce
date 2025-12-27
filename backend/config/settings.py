@@ -1,5 +1,8 @@
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -11,8 +14,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-pb1ve5@$0=hp@9yt6mrhda%+4+*d0ygq&_%mw61zp$^t(_x&4u"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -33,7 +34,7 @@ INSTALLED_APPS = [
     # "reviews",
     "orders",
     # "carts",
-    # "payments",
+    "payments",
 ]
 
 
@@ -158,3 +159,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+
+# Using environment variables
+
+# This following line is for python-dotenv library
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+DEBUG = os.getenv("DEBUG") == "True"  # Manual casting to boolean
+
+# Stripe related stuff
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")

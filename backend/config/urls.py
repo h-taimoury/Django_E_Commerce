@@ -15,7 +15,7 @@ urlpatterns = [
     path("api/", include("orders.urls")),
     # path("api/reviews/", include("reviews.urls")),
     # path("api/carts/", include("carts.urls")),
-    # path("api/payments/", include("payments.urls")),
+    path("api/payments/", include("payments.urls")),
     # The following two URL patterns are here for drf_spectacular library
     # API Schema View (The raw JSON/YAML specification file)
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
