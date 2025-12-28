@@ -5,6 +5,9 @@ from orders.models import Order
 
 # Initialize stripe with your secret key from settings.py
 stripe.api_key = settings.STRIPE_SECRET_KEY
+# Using the following two lines we can check our account id related to the secret and publishable keys stored as env variables. Then we can compare it with the account id we see in stripe dashboard.
+# acct = stripe.Account.retrieve()
+# print("Stripe account id:", acct["id"])
 
 
 class PaymentService:
@@ -32,9 +35,10 @@ class PaymentService:
             mode="payment",
             success_url=settings.PAYMENT_SUCCESS_URL
             + "?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=settings.PAYMENT_CANCEL_URL,
+            # cancel_url=settings.PAYMENT_CANCEL_URL,
             client_reference_id=order.order_key,  # Link Stripe session to our Order
         )
+        # print("This is the Stripe session:", session)
 
         # Create an initial 'pending' transaction in our DB
         Transaction.objects.create(

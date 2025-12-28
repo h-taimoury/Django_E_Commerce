@@ -35,7 +35,8 @@ class CreateCheckoutSessionView(APIView):
                 {"error": f"Payment Gateway Error: {str(e)}"},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
-        except Exception:
+        except Exception as e:
+            print("This error happened:", e)
             # This catches things like database errors or unexpected Python bugs
             return Response(
                 {"error": "An internal server error occurred. Please try again later."},
@@ -45,6 +46,7 @@ class CreateCheckoutSessionView(APIView):
 
 @csrf_exempt
 def stripe_webhook(request):
+    print("A webhook recieved!!!!!!!!")
     payload = request.body
     sig_header = request.headers.get("Stripe-Signature")
     event = None
@@ -53,6 +55,7 @@ def stripe_webhook(request):
         event = stripe.Webhook.construct_event(
             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
+        # print("This is the event:", event)
     except ValueError:
         return HttpResponse(status=status.HTTP_400_BAD_REQUEST)  # Invalid payload
     except stripe.error.SignatureVerificationError:

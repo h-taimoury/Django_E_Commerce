@@ -1,7 +1,11 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-from dotenv import load_dotenv
+
+# This line is for django-environ library
+import environ
+# This line is for python-dotenv library 👇
+# from dotenv import load_dotenv
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -163,12 +167,34 @@ STATIC_URL = "static/"
 
 # Using environment variables
 
-# This following line is for python-dotenv library
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+# Boiler-plate code for python-dotenv library 👇
+# load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-DEBUG = os.getenv("DEBUG") == "True"  # Manual casting to boolean
+# DEBUG = os.getenv("DEBUG") == "True"  # Manual casting to boolean
 
-# Stripe related stuff
-STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+# # Stripe related stuff
+# STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+# STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+# STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+# Boiler-plate code for python-dotenv library 👆
+
+# Boiler-plate code for django-environ library 👇
+# Initialize the manager
+# This object will handle all lookups and conversions.
+env = environ.Env(
+    # Set default values and casting here (e.g. DEBUG is a boolean)
+    DEBUG=(bool, False)
+)
+
+# Read the .env file
+# This tells the manager where your secret file lives.
+# In production, if this file is missing, it just skips this step silently.
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+# Use the variables
+# Notice we use env() instead of os.getenv()
+DEBUG = env("DEBUG")  # Returns a real Python True/False
+STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
+PAYMENT_SUCCESS_URL = env("PAYMENT_SUCCESS_URL")
