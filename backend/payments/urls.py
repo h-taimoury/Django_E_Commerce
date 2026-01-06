@@ -7,7 +7,6 @@ from .views import (
 )
 
 urlpatterns = [
-    # User-facing endpoints
     path(
         "create-session/",
         CreateCheckoutSessionView.as_view(),

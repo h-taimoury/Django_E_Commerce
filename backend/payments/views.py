@@ -4,12 +4,15 @@ from rest_framework import status, permissions, generics
 from django.shortcuts import get_object_or_404
 from orders.models import Order
 from .models import Transaction
-from .services import PaymentService
+from .services import PaymentService, OutOfStockError
 import stripe
 from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import TransactionListSerializer, TransactionDetailSerializer
+
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class CreateCheckoutSessionView(APIView):
@@ -26,18 +29,22 @@ class CreateCheckoutSessionView(APIView):
             )
 
         try:
-            checkout_url = PaymentService.create_checkout_session(order)
+            checkout_url = PaymentService.create_checkout_session(
+                order=order, user=request.user
+            )
             return Response({"checkout_url": checkout_url}, status=status.HTTP_200_OK)
 
+        except OutOfStockError as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
+
         except stripe.error.StripeError as e:
-            # This catches issues like invalid API keys, rate limits, or bad parameters
             return Response(
                 {"error": f"Payment Gateway Error: {str(e)}"},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
+
         except Exception as e:
             print("This error happened:", e)
-            # This catches things like database errors or unexpected Python bugs
             return Response(
                 {"error": "An internal server error occurred. Please try again later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -46,35 +53,31 @@ class CreateCheckoutSessionView(APIView):
 
 @csrf_exempt
 def stripe_webhook(request):
-    print("A webhook recieved!!!!!!!!")
     payload = request.body
     sig_header = request.headers.get("Stripe-Signature")
-    event = None
+
     try:
-        # 1. Verify that the request actually came from Stripe
         event = stripe.Webhook.construct_event(
             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
-        # print("This is the event:", event)
     except ValueError:
-        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)  # Invalid payload
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
     except stripe.error.SignatureVerificationError:
-        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)  # Invalid signature
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
 
-    # 2. Handle the specific event
-    if event["type"] == "checkout.session.completed":
+    event_type = event.get("type")
+
+    if event_type == "checkout.session.completed":
         session = event["data"]["object"]
-
-        # Call our service to fulfill the order
-        # This updates the Transaction and the Order status
-        order_key = session.get("client_reference_id")
-        print(f"this is the order_key from session: {order_key}")
         success = PaymentService.fulfill_order(session)
-
         if not success:
             return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    # 3. Always return a 200 OK to Stripe so they stop retrying
+    elif event_type == "checkout.session.expired":
+        # Release held stock if the checkout session expires
+        PaymentService.release_reservations_for_session(session.get("id"))
+
+    # Always return 200 so Stripe doesn't keep retrying on successful handling
     return HttpResponse(status=status.HTTP_200_OK)
 
 

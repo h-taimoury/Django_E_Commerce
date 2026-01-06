@@ -80,53 +80,61 @@ class OrderWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop("order_items")
         user = validated_data.pop("user")
-        address = validated_data.get("address")
+        address = validated_data["address"]
 
-        with transaction.atomic():
-            total_price = 0
-            order_items_to_create = []
+        total_price = 0
+        order_items_to_create = []
 
-            for item in items_data:
-                try:
-                    product = Product.objects.select_for_update().get(
-                        id=item["product"]
-                    )
-                except Product.DoesNotExist:
-                    raise serializers.ValidationError(
-                        {
-                            "product": f"Product with ID {item.get('product')} does not exist."
-                        }
-                    )
+        for item in items_data:
+            product_id = item.get("product")
+            quantity = item.get("quantity")
 
-                quantity = item["quantity"]
-
-                if product.stock_quantity < quantity:
-                    raise serializers.ValidationError(
-                        {product.name: f"Only {product.stock_quantity} left in stock."}
-                    )
-
-                product.stock_quantity -= quantity
-                product.save()
-
-                current_price = product.price
-                total_price += current_price * quantity
-
-                order_items_to_create.append(
-                    {"product": product, "price": current_price, "quantity": quantity}
+            if not product_id or quantity is None:
+                raise serializers.ValidationError(
+                    {"order_items": "Each item must include 'product' and 'quantity'."}
                 )
 
-            # Map snapshot fields from the address instance to validated_data
-            # This "freezes" the address details at the moment of purchase
-            validated_data["shipping_address_line1"] = address.address_line_1
-            validated_data["shipping_city"] = address.city
-            validated_data["shipping_postal_code"] = address.postal_code
+            if int(quantity) <= 0:
+                raise serializers.ValidationError(
+                    {"order_items": f"Quantity must be >= 1 for product {product_id}."}
+                )
 
-            # 3. Create the Order with the snapshot data included in **validated_data
+            try:
+                product = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"order_items": f"Product with ID {product_id} does not exist."}
+                )
+
+            # Soft check (UX). Real check happens at reservation time in payments.
+            if product.quantity_available < quantity:
+                raise serializers.ValidationError(
+                    {
+                        "order_items": f"Not enough stock for '{product.name}'. "
+                        f"Available={product.quantity_available}, requested={quantity}."
+                    }
+                )
+
+            current_price = product.price
+            total_price += current_price * quantity
+            order_items_to_create.append(
+                {"product": product, "price": current_price, "quantity": quantity}
+            )
+
+        # Snapshot address
+        validated_data["shipping_address_line1"] = address.address_line_1
+        validated_data["shipping_city"] = address.city
+        validated_data["shipping_postal_code"] = address.postal_code
+
+        with transaction.atomic():
             order = Order.objects.create(
                 user=user, total_paid=total_price, **validated_data
             )
+            OrderItem.objects.bulk_create(
+                [
+                    OrderItem(order=order, **item_info)
+                    for item_info in order_items_to_create
+                ]
+            )
 
-            for item_info in order_items_to_create:
-                OrderItem.objects.create(order=order, **item_info)
-
-            return order
+        return order

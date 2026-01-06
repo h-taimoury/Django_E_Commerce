@@ -158,7 +158,8 @@ class Product(models.Model):
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    stock_quantity = models.IntegerField(default=0)
+    quantity_on_hand = models.PositiveIntegerField(default=0)
+    quantity_available = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     main_image = models.ImageField(
         upload_to="product_images/main/",
@@ -173,6 +174,13 @@ class Product(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        # Check if this is a "Create" (no Primary Key yet)
+        if not self.pk:
+            # Force available to match on-hand at the start
+            self.quantity_available = self.quantity_on_hand
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
