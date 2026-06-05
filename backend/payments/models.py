@@ -61,7 +61,6 @@ class StockReservation(models.Model):
     )
 
     quantity = models.PositiveIntegerField()
-
     # One Stripe session typically corresponds to MANY reservation rows (one per product/order item).
     stripe_session_id = models.CharField(
         max_length=255,

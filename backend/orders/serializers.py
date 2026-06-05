@@ -80,7 +80,6 @@ class OrderWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop("order_items")
         user = validated_data.pop("user")
-        address = validated_data["address"]
 
         total_price = 0
         order_items_to_create = []
@@ -121,10 +120,27 @@ class OrderWriteSerializer(serializers.ModelSerializer):
                 {"product": product, "price": current_price, "quantity": quantity}
             )
 
-        # Snapshot address
-        validated_data["shipping_address_line1"] = address.address_line_1
-        validated_data["shipping_city"] = address.city
-        validated_data["shipping_postal_code"] = address.postal_code
+        # Check for existing draft order
+        draft_order = Order.objects.filter(user=user, status="draft").first()
+
+        if draft_order:
+            with transaction.atomic():
+                # Delete old order items
+                draft_order.items.all().delete()
+
+                # Update order fields
+                draft_order.total_paid = total_price
+                draft_order.save()
+
+                # Create new order items
+                OrderItem.objects.bulk_create(
+                    [
+                        OrderItem(order=draft_order, **item_info)
+                        for item_info in order_items_to_create
+                    ]
+                )
+
+            return draft_order
 
         with transaction.atomic():
             order = Order.objects.create(
@@ -138,3 +154,65 @@ class OrderWriteSerializer(serializers.ModelSerializer):
             )
 
         return order
+
+    # def create(self, validated_data):
+    #     items_data = validated_data.pop("order_items")
+    #     user = validated_data.pop("user")
+    #     address = validated_data["address"]
+
+    #     total_price = 0
+    #     order_items_to_create = []
+
+    #     for item in items_data:
+    #         product_id = item.get("product")
+    #         quantity = item.get("quantity")
+
+    #         if not product_id or quantity is None:
+    #             raise serializers.ValidationError(
+    #                 {"order_items": "Each item must include 'product' and 'quantity'."}
+    #             )
+
+    #         if int(quantity) <= 0:
+    #             raise serializers.ValidationError(
+    #                 {"order_items": f"Quantity must be >= 1 for product {product_id}."}
+    #             )
+
+    #         try:
+    #             product = Product.objects.get(id=product_id)
+    #         except Product.DoesNotExist:
+    #             raise serializers.ValidationError(
+    #                 {"order_items": f"Product with ID {product_id} does not exist."}
+    #             )
+
+    #         # Soft check (UX). Real check happens at reservation time in payments.
+    #         if product.quantity_available < quantity:
+    #             raise serializers.ValidationError(
+    #                 {
+    #                     "order_items": f"Not enough stock for '{product.name}'. "
+    #                     f"Available={product.quantity_available}, requested={quantity}."
+    #                 }
+    #             )
+
+    #         current_price = product.price
+    #         total_price += current_price * quantity
+    #         order_items_to_create.append(
+    #             {"product": product, "price": current_price, "quantity": quantity}
+    #         )
+
+    #     # Snapshot address
+    #     validated_data["shipping_address_line1"] = address.address_line_1
+    #     validated_data["shipping_city"] = address.city
+    #     validated_data["shipping_postal_code"] = address.postal_code
+
+    #     with transaction.atomic():
+    #         order = Order.objects.create(
+    #             user=user, total_paid=total_price, **validated_data
+    #         )
+    #         OrderItem.objects.bulk_create(
+    #             [
+    #                 OrderItem(order=order, **item_info)
+    #                 for item_info in order_items_to_create
+    #             ]
+    #         )
+
+    #     return order

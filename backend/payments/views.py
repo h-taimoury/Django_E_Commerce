@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, generics
 from django.shortcuts import get_object_or_404
-from orders.models import Order
 from .models import Transaction
+from orders.models import Order, Address
 from .services import PaymentService, OutOfStockError
 import stripe
 from django.conf import settings
@@ -20,7 +20,18 @@ class CreateCheckoutSessionView(APIView):
 
     def post(self, request, *args, **kwargs):
         order_id = request.data.get("order_id")
+        address_id = request.data.get("address_id")
         order = get_object_or_404(Order, id=order_id, user=request.user)
+
+        # Validate address
+        if not address_id:
+            return Response(
+                {"error": "Address is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Get the address and verify it belongs to the user
+        address = get_object_or_404(Address, id=address_id, user=request.user)
 
         if order.status == "paid":
             return Response(
@@ -29,6 +40,14 @@ class CreateCheckoutSessionView(APIView):
             )
 
         try:
+            # Snapshot address
+            order.address = address
+            order.shipping_address_line1 = address.address_line_1
+            order.shipping_city = address.city
+            order.shipping_postal_code = address.postal_code
+
+            order.status = "pending_payment"
+            order.save()
             checkout_url = PaymentService.create_checkout_session(
                 order=order, user=request.user
             )
@@ -44,6 +63,9 @@ class CreateCheckoutSessionView(APIView):
             )
 
         except Exception as e:
+            # If any other error, revert order status back to draft
+            order.status = "draft"
+            order.save()
             print("This error happened:", e)
             return Response(
                 {"error": "An internal server error occurred. Please try again later."},

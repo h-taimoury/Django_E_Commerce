@@ -151,7 +151,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     """
-    Model for individual products.
+    Model for products.
     """
 
     name = models.CharField(max_length=255)

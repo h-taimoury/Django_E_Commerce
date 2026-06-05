@@ -42,8 +42,13 @@ class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Security: Users only see their own orders
-        return Order.objects.filter(user=self.request.user)
+        if self.request.method == "POST":
+            # Security: Users only see their own orders
+            return Order.objects.filter(user=self.request.user)
+
+        return Order.objects.filter(user=self.request.user).exclude(
+            status__in=["draft", "expired"]
+        )
 
     def get_serializer_class(self):
         if self.request.method == "POST":

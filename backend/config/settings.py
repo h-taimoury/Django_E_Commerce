@@ -31,13 +31,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Third-party apps
     "rest_framework",
     "drf_spectacular",
+    "corsheaders",
+    # Local apps
     "users",
     "products",
-    # "reviews",
+    "reviews",
     "orders",
-    # "carts",
+    "carts",
     "payments",
 ]
 
@@ -45,8 +48,8 @@ INSTALLED_APPS = [
 # OPTIONAL: Add configuration settings for spectacular
 # This is not required but can be helpful for branding/metadata
 SPECTACULAR_SETTINGS = {
-    "TITLE": "My Blog CBVs API",
-    "DESCRIPTION": "Detailed documentation for the Blog REST API",
+    "TITLE": "My E-Commerce API",
+    "DESCRIPTION": "Detailed documentation for my E-Commerce API",
     "VERSION": "1.0.0",
     # This setting tells Spectacular where to find the API schema generation logic
     "SERVE_INCLUDE_SCHEMA": False,
@@ -95,7 +98,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Added this line for django-cors-headers library.
+    "corsheaders.middleware.CorsMiddleware",
 ]
+
+# I added this setting for django-cors-headers library to allow all origins to make requests to this API. AI told me to do it, I don't understand it myself.
+CORS_ALLOW_ALL_ORIGINS = True  # dev only
+
 
 ROOT_URLCONF = "config.urls"
 
