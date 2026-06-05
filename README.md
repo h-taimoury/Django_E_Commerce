@@ -17,16 +17,16 @@ A full-featured e-commerce backend built with **Django** and **Django REST Frame
 
 ---
 
-## 🏗️ Tech Stack
+## 💻 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Django 6.0, Django REST Framework 3.16 |
-| Authentication | Simple JWT |
-| Payments | Stripe |
-| Database | SQLite (dev) |
-| API Docs | drf-spectacular / Swagger UI |
-| Media Storage | Local filesystem (dev) |
+| Layer          | Technology                             |
+| -------------- | -------------------------------------- |
+| Framework      | Django 6.0, Django REST Framework 3.16 |
+| Authentication | Simple JWT                             |
+| Payments       | Stripe                                 |
+| Database       | SQLite (dev)                           |
+| API Docs       | drf-spectacular / Swagger UI           |
+| Media Storage  | Local filesystem (dev)                 |
 
 ---
 
@@ -97,46 +97,52 @@ PAYMENT_SUCCESS_URL=http://localhost:3000/payment/success
 ## 📡 API Endpoints
 
 ### Authentication
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/users/register/` | Register a new user |
-| `POST` | `/api/users/login/` | Login and receive JWT tokens |
-| `GET/PATCH` | `/api/users/me/` | View or update current user profile |
+
+| Method      | Endpoint               | Description                         |
+| ----------- | ---------------------- | ----------------------------------- |
+| `POST`      | `/api/users/register/` | Register a new user                 |
+| `POST`      | `/api/users/login/`    | Login and receive JWT tokens        |
+| `GET/PATCH` | `/api/users/me/`       | View or update current user profile |
 
 ### Products
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/products/` | List all active products |
-| `GET` | `/api/products/{id}/` | Product detail with specifications |
-| `GET` | `/api/categories/` | List all categories |
-| `GET` | `/api/attributes/` | List all product attributes |
+
+| Method | Endpoint              | Description                        |
+| ------ | --------------------- | ---------------------------------- |
+| `GET`  | `/api/products/`      | List all active products           |
+| `GET`  | `/api/products/{id}/` | Product detail with specifications |
+| `GET`  | `/api/categories/`    | List all categories                |
+| `GET`  | `/api/attributes/`    | List all product attributes        |
 
 ### Cart
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/cart/` | View current cart |
-| `POST` | `/api/cart/items/` | Add item to cart |
+
+| Method         | Endpoint                | Description                |
+| -------------- | ----------------------- | -------------------------- |
+| `GET`          | `/api/cart/`            | View current cart          |
+| `POST`         | `/api/cart/items/`      | Add item to cart           |
 | `PATCH/DELETE` | `/api/cart/items/{id}/` | Update or remove cart item |
-| `POST` | `/api/cart/clear/` | Clear the cart |
+| `POST`         | `/api/cart/clear/`      | Clear the cart             |
 
 ### Orders
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET/POST` | `/api/orders/` | List orders or create a new draft order |
-| `GET` | `/api/orders/{id}/` | Order detail |
-| `GET/POST` | `/api/addresses/` | List or create shipping addresses |
+
+| Method     | Endpoint            | Description                             |
+| ---------- | ------------------- | --------------------------------------- |
+| `GET/POST` | `/api/orders/`      | List orders or create a new draft order |
+| `GET`      | `/api/orders/{id}/` | Order detail                            |
+| `GET/POST` | `/api/addresses/`   | List or create shipping addresses       |
 
 ### Payments
-| Method | Endpoint | Description |
-|---|---|---|
+
+| Method | Endpoint                        | Description                      |
+| ------ | ------------------------------- | -------------------------------- |
 | `POST` | `/api/payments/create-session/` | Create a Stripe Checkout session |
-| `POST` | `/api/payments/webhook/` | Stripe webhook handler |
+| `POST` | `/api/payments/webhook/`        | Stripe webhook handler           |
 
 ### API Documentation
-| Endpoint | Description |
-|---|---|
-| `/api/schema/swagger-ui/` | Interactive Swagger UI |
-| `/api/schema/` | Raw OpenAPI schema (JSON/YAML) |
+
+| Endpoint                  | Description                    |
+| ------------------------- | ------------------------------ |
+| `/api/schema/swagger-ui/` | Interactive Swagger UI         |
+| `/api/schema/`            | Raw OpenAPI schema (JSON/YAML) |
 
 ---
 
@@ -158,7 +164,7 @@ PAYMENT_SUCCESS_URL=http://localhost:3000/payment/success
 
 ---
 
-## 🧪 Running Tests
+## 📝 Running Tests
 
 ```bash
 python manage.py test
@@ -170,10 +176,8 @@ Tests are organized per app and cover authentication, product CRUD, order isolat
 
 ## 🔐 Permissions
 
-| Role | Capabilities |
-|---|---|
-| **Anonymous** | Browse products, categories, attributes |
-| **Authenticated User** | Manage own cart, orders, addresses, and reviews |
-| **Admin (is_staff)** | Full CRUD on products, attributes, options; view all transactions; approve reviews |
-
-
+| Role                   | Capabilities                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| **Anonymous**          | Browse products, categories, attributes                                            |
+| **Authenticated User** | Manage own cart, orders, addresses, and reviews                                    |
+| **Admin (is_staff)**   | Full CRUD on products, attributes, options; view all transactions; approve reviews |
