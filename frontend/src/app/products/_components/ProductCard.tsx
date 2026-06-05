@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import AddToCartButton from "./AddToCartButton";
 
 type Product = {
   id: number;
@@ -33,9 +33,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
       {/* Add to Cart Button (Amazon Yellow) */}
       <div className="mt-auto py-4 z-10">
-        <Button className="w-fit rounded-full bg-[#FFD814] px-6 text-black hover:bg-[#F7CA00] border border-[#FCD200] shadow-sm text-xs h-8">
-          Add to cart
-        </Button>
+        <AddToCartButton product={product} />
       </div>
     </Link>
   );

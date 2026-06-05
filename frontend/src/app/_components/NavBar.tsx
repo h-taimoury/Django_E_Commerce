@@ -1,13 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
 // import UserDropdown from "@/components/UserDropDown";
-import logo from "../../../public/next.svg";
 import { cn } from "@/lib/utils";
-import NavLink from "./NavLink";
+import NavLink from "./navbar/NavLink";
+import Cart from "./navbar/Cart";
 
 const linkItems = [
   { title: "Products", href: "/products" },
-  { title: "Blog", href: "/blog" },
   { title: "About", href: "/about" },
   { title: "Contact", href: "/contact" },
 ];
@@ -30,6 +29,7 @@ export default function Navbar() {
             {linkItem.title}
           </NavLink>
         ))}
+        <Cart />
       </nav>
     </div>
   );
